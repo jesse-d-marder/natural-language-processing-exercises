@@ -1,0 +1,1 @@
+This repository contains code for the Codeup Natural Language Processing exercises
