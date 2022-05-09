@@ -14,7 +14,7 @@ def get_post_details(post):
     # Extract date published
     output['date_published'] = post.select('span.published')[0].text
     # Extracts blog post contents
-    output['content'] = get_blog_content(output['url'])
+    output['original'] = get_blog_content(output['url'])
     
     return output
 
@@ -38,7 +38,7 @@ def get_blog_articles(use_cache = True):
     filename = 'blog.csv'
     
     if use_cache and os.path.exists(filename):
-        return pd.read_csv(filename).to_dict()
+        return pd.read_csv(filename).dropna().to_dict()
         
     url = 'https://codeup.com/blog/'
     headers = {'User-Agent': 'Codeup Data Science'} # Some websites don't accept the python-requests default user-agent
@@ -48,7 +48,7 @@ def get_blog_articles(use_cache = True):
     # Make a soup variable holding the response content
     soup = BeautifulSoup(response.content, 'html.parser')
     
-    pd.DataFrame([get_post_details(post) for post in soup.select('article.et_pb_post')]).to_csv(filename, index=None)
+    pd.DataFrame([get_post_details(post) for post in soup.select('article.et_pb_post')]).dropna().to_csv(filename, index=None)
     
 
     return [get_post_details(post) for post in soup.select('article.et_pb_post')]
@@ -77,11 +77,11 @@ def get_news_details(news_card, category):
     category: this is passed to this function so it can be added to the dictionary"""
     
     output={}
-    output['headline'] = news_card.select('div.news-card-title')[0].find("span").text
+    output['title'] = news_card.select('div.news-card-title')[0].find("span").text
     output['author'] =  news_card.select('div.news-card-author-time')[0].find('span', class_='author').text
     output['datetime'] = news_card.select('div.news-card-author-time')[0].find('span', class_='time').attrs['content']
     output['category'] = category.lower()
-    output['content'] = news_card.select('div.news-card-content')[0].find('div').text
+    output['original'] = news_card.select('div.news-card-content')[0].find('div').text
     
     return output
     
@@ -112,7 +112,7 @@ def get_news_categories(soup):
     return [c.text.lower() for c in categories]
 
 def get_news_articles(desired_categories = 'all', get_fresh_news = False):
-    """ Returns dictionary of news article information from https://inshorts.com/ .
+    """ Returns dictionary of news article information from https://inshorts.com/ or from cached csv.
     desired_categories: 'all' by default or a list of categories desired
     get_fresh_news: if True returns fresh news and writes fresh news to news.csv """
     
@@ -124,7 +124,7 @@ def get_news_articles(desired_categories = 'all', get_fresh_news = False):
         # Checks if cache exists
         if os.path.exists(news_cache_file):
             print("Importing from csv")
-            return pd.read_csv('news.csv')
+            return pd.read_csv('news.csv').dropna().to_dict()
         else:
             print("News cache does not exist, acquiring fresh news...")
             # Condition when don't want fresh news but no cache exists, ensure new data is cached to csv
@@ -165,6 +165,6 @@ def get_news_articles(desired_categories = 'all', get_fresh_news = False):
     
     # Write results to cache
     if get_fresh_news or need_cache:
-        pd.DataFrame(news).to_csv(news_cache_file, index = None)
+        pd.DataFrame(news).dropna().to_csv(news_cache_file, index = None)
        
     return news
