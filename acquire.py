@@ -32,8 +32,14 @@ def get_blog_content(url):
         entry_text += t.text.strip()
     return entry_text
 
-def get_blog_articles(return_dataframe = False):
-    """ Returns dictionary (or dataframe) of information about blog posts on codeup.com/blog site """
+def get_blog_articles(use_cache = True):
+    """ Returns dictionary of information about blog posts on codeup.com/blog site """
+    
+    filename = 'blog.csv'
+    
+    if use_cache and os.path.exists(filename):
+        return pd.read_csv(filename).to_dict()
+        
     url = 'https://codeup.com/blog/'
     headers = {'User-Agent': 'Codeup Data Science'} # Some websites don't accept the python-requests default user-agent
     response = get(url, headers=headers)
@@ -42,8 +48,8 @@ def get_blog_articles(return_dataframe = False):
     # Make a soup variable holding the response content
     soup = BeautifulSoup(response.content, 'html.parser')
     
-    if return_dataframe:
-        return pd.DataFrame([get_post_details(post) for post in soup.select('article.et_pb_post')])
+    pd.DataFrame([get_post_details(post) for post in soup.select('article.et_pb_post')]).to_csv(filename, index=None)
+    
 
     return [get_post_details(post) for post in soup.select('article.et_pb_post')]
 
