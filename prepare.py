@@ -32,7 +32,7 @@ def tokenize(article:str):
     
     tokenizer = nltk.tokenize.ToktokTokenizer()
 
-    return tokenizer.tokenize(original, return_str=True)
+    return tokenizer.tokenize(article, return_str=True)
 
 def stem(article: str):
     """ Takes in a string, article, and returns text after applying stemming using Porter method """
@@ -67,36 +67,43 @@ def remove_stopwords(article: str, extra_words: list, exclude_words: list):
     words = article.split()
     filtered_words = [w for w in words if w not in stopword_list]
 
-    print('Removed {} stopwords'.format(len(words) - len(filtered_words)))
+    # print('Removed {} stopwords'.format(len(words) - len(filtered_words)))
 
     article_without_stopwords = ' '.join(filtered_words)
     
     return article_without_stopwords
 
-def prepare_df(df):
-    
+def prepare_df(df, extra_words = [], exclude_words = []):
+    """Adds columns for cleaned, stemmed, and lemmatized data in dataframe """
     # Create cleaned data column of content
-    df['clean'] = df.apply(lambda row: basic_clean(row.original), axis=1)
+    df['clean'] = df.original.apply(basic_clean).apply(tokenize).apply(remove_stopwords,
+                                                       extra_words = extra_words,
+                                                       exclude_words = exclude_words)
     
     # Create stemmed column with stemmed version of cleaned data
-    df['stemmed'] = df.apply(lambda row: stem(row.clean), axis=1)
+    df['stemmed'] = df.clean.apply(tokenize).apply(stem).apply(remove_stopwords,
+                                                       extra_words = extra_words,
+                                                       exclude_words = exclude_words)
 
     # Create lemmatized column with lemmatized version of cleaned data
-    df['lemmatized'] = df.apply(lambda row: lemmatize(row.clean), axis=1)
+    df['lemmatized'] = df.clean.apply(tokenize).apply(lemmatize).apply(remove_stopwords,
+                                                       extra_words = extra_words,
+                                                       exclude_words = exclude_words)
     
     return df
     
     
-def create_prepared_news_df():
-    
+def create_prepared_news_df(extra_words =[], exclude_words = []):
+    """Run this function to generate a prepared news article dataframe with cleaned, stemmed, and lemmatized data"""
     news_df = pd.DataFrame(acquire.get_news_articles())
     
-    return prepare_df(news_df)
+    return prepare_df(news_df, extra_words, exclude_words)
     
-def create_prepared_blog_df():
-    
+def create_prepared_blog_df(extra_words =[], exclude_words = []):
+    """Run this function to generate a prepared Codeup Blog dataframe with cleaned, stemmed, and lemmatized data"""
+
     codeup_df = pd.DataFrame(acquire.get_blog_articles())
     
-    return prepare_df(codeup_df)
+    return prepare_df(codeup_df, extra_words, exclude_words)
     
     
